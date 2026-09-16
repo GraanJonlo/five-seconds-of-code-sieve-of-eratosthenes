@@ -1,6 +1,9 @@
 # Per-machine race baseline, recorded on first run
 baseline.txt
 
+# Output of the cache-cliff console app
+cache-cliff.csv
+
 # go build output, named after the module
 DragRace
 DragRace.exe

@@ -79,6 +79,35 @@ The Go race
 go run .
 ```
 
+## Seeing why the sieve is slow
+
+`cache-cliff/` measures, on your machine, how the cost of a single sieve operation changes
+as the array outgrows each level of cache. It does not tell you what to type. It shows you
+the wall, and leaves working out what to do about it to you.
+
+Two ways to run it, both measuring the same thing.
+
+**The console app**, which needs nothing beyond the .NET 10 SDK:
+
+```
+cd cache-cliff
+dotnet run -c Release
+```
+
+It prints a table, two ASCII charts drawn on a shared scale, and writes `cache-cliff.csv`
+if you would rather plot it yourself. It reads your real per core cache sizes from the OS.
+
+**The notebook**, `cache-cliff/cache-cliff.ipynb`, if you would rather have interactive
+charts. It measures in C#, reads cache sizes in PowerShell and draws with Plotly.NET in F#,
+which is as good an excuse for a Polyglot Notebook as any. Open it in VS Code with the
+Polyglot Notebooks extension and run all cells. That extension is VS Code only, so Rider
+users will need VS Code for this one file.
+
+Prefer the console app if you want the numbers to be trustworthy. A notebook kernel is not
+an optimized Release build, so it reads slow at the cheap end and flattens the very effect
+it is trying to show. Either way, read the shape of the curve rather than the absolute
+nanoseconds.
+
 ## Taking things further
 
 This exercise was inspired/ ripped off from a YouTube video from [Dave's Garage](https://www.youtube.com/watch?v=D3h62rgewZM)
