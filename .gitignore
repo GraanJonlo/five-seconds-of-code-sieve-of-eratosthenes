@@ -1,6 +1,10 @@
 # Per-machine race baseline, recorded on first run
 baseline.txt
 
+# go build output, named after the module
+DragRace
+DragRace.exe
+
 bin/
 obj/
 
