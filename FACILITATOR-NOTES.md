@@ -21,15 +21,90 @@ teammate who happens to have a newer laptop.
 
 | | |
 |---|---|
-| Intro and rules | Everyone runs their race once, untouched, to record `baseline.txt` |
-| First rung together | Mob it. Get from the naive sieve to the square root bound and `f*f` as a group |
-| Pairs | The long stretch. Circulate, nudge, resist fixing it for them |
+| Intro and rules | Everyone records a baseline, **best of three**. Worth getting right — see below |
+| First rung together | Mob **rung 2 only**, the square root bound. Bank the number and stop |
+| Pairs | The long stretch, with **rung 4 as the target**. Circulate, nudge, resist fixing it for them |
 | Debrief | Each pair says which rung gave them the most, and what surprised them |
 
-Mobbing the first rung matters more than it sounds. It puts a real number on the board
-inside twenty minutes — measured, the square root bound alone is 4.70x in C#, 2.2x in F#
-and Go, 6.02x in JavaScript — gives everyone shared vocabulary, and removes the cold start
-that makes people feel stupid. It is the single highest value thing on this page.
+**Mob rung 2, and only rung 2.** This page used to say mob the square root bound and `f*f`
+together. Don't. `f*f` is worth 1.08x where the square root bound is worth 2.19x to 6.02x
+depending on language, so bundling them buries the big win inside a rung that does almost
+nothing — and quietly teaches the room that rungs are roughly interchangeable. They are
+not: see [the measured numbers](#measured-numbers).
+
+Rung 1 is a poor thing to mob for a different reason. It is the only rung that is not the
+same change in every language, so half the room watches the other half. Let pairs pick it
+up on their own afterwards.
+
+Mobbing still matters more than it sounds. It puts a real number on the board inside twenty
+minutes, gives everyone shared vocabulary, and removes the cold start that makes people
+feel stupid.
+
+**Then say out loud that rung 4 is the target.** Rungs 2 and 4 between them are 10.7x of
+C#'s 11.9x. Everything else on the ladder is a few percent either way, and two rungs are
+negative in some languages. A pair who reaches odds only has had the session; a pair who
+reaches odds only and then measures the bitset carefully has had a better one.
+
+## Recording a baseline you can trust
+
+The scoring is at its most fragile in the first ten minutes, and nobody notices.
+
+`baseline.txt` captures the **first valid run, and never overwrites it**. That run happens
+while the whole room is restoring packages, building and racing simultaneously — the worst
+contention of the day. Whatever it records becomes the denominator of every number that
+team quotes for the rest of the session.
+
+The size of this is not hypothetical. While measuring the numbers on this page, one
+repetition ran 2.3% slow across the board; inside it the Go baseline dropped **25%** and one
+F# variant dropped 22%. A pair whose baseline lands 25% low spends the afternoon reading
+1.25x too high and reports a speedup they never earned.
+
+**The fix is thirty seconds in the briefing.** Everyone runs the race three times, deleting
+`baseline.txt` between each, then hand-writes the highest lap count into the file. It holds
+a single integer and nothing else. The README walks participants through it.
+
+**Why the best rather than the average.** Laps completed in a fixed five seconds is
+one-sided noise: interference can only ever remove laps, never add them, because nothing
+makes a machine complete more laps than it is capable of. So the fastest of several runs is
+the best estimate of the machine, where an average estimates the machine *plus whatever else
+was running*. It is the same argument behind every number on this page being a maximum over
+five repetitions rather than a median.
+
+Say this to the room rather than just imposing the procedure. It is the first piece of
+measurement discipline they need, it costs one sentence, and a team who take it on board at
+the baseline will apply it to their own rungs later — which is where it actually decides
+whether they believe a result.
+
+## The machines you are measuring on
+
+The README warns of roughly 5% run to run noise. That is right for a quiet machine and badly
+understates the hazard on a modern laptop.
+
+**Performance and efficiency cores differ by a factor of two.** Racing the same sieve pinned
+to each logical CPU in turn, on the machine these numbers came from:
+
+| Logical CPUs | | Laps per second |
+|---|---|---|
+| 0–11 | 6 performance cores | ~1940 |
+| 12–19 | 8 efficiency cores | 950–980 |
+
+Nothing pins a single threaded race to a fast core. A run that lands on an efficiency core
+reads **half speed**, and to the pair who just made a change it looks exactly like a
+regression they caused.
+
+**What it looks like in the room.** A pair reports that a change made things much worse,
+cannot see why, and reverting does not bring the old number back either. Get them to run the
+same unchanged binary three times. If the spread is large, they are measuring the scheduler
+rather than their code, and the answer is to take the best of several runs — the same
+discipline as the baseline.
+
+`facilitator-solutions/measure.ps1` carries the affinity pinning pattern if anyone wants to
+chase it properly, including why it masks the performance cores rather than pinning to a
+single one. Good aside for a pair who are flying; a rabbit hole for anybody else.
+
+**Tell them to plug in, too.** On battery the clock is throttled and drifts as the machine
+warms up, so a pair's morning numbers and their afternoon numbers are not on the same
+scale.
 
 ## The ladder
 
@@ -648,18 +723,27 @@ where those two pull the same way.
 
 ## Nudges, in order
 
-Hold these and hand out one at a time when a pair has been stuck for about fifteen minutes.
-Each one is a question, not an instruction, and the follow up is only for when the question
-lands flat. Stop nudging as soon as they say the thing in the "you are done here" line —
-after that they are working, not stuck.
+Hand these out one at a time. Stop nudging as soon as a pair says the thing in the "you are
+done here" line — after that they are working, not stuck.
 
-**Before nudge 1, check which language they are in.** The first rung is not the same one.
+**Which nudge to open with.** The numbering below is the ladder's order, not the order you
+will hand them out. If you mobbed rung 2 as suggested, nudge 1 is already spent, so:
 
-| Language | Open with |
+| Where the pair is | Open with |
 |---|---|
-| C# | "What does `List<bool>.Add` do when it runs out of room?" |
-| JavaScript | "How many bytes do you think each `true` in that array takes?" |
-| Go, F# | Skip to nudge 1, they already start on a flat array |
+| Just out of the mob, most pairs | **Nudge 3** — rung 4 is the afternoon's target |
+| Still on a growable list (C#) | "What does `List<bool>.Add` do when it runs out of room?" |
+| Still on `new Array(n)` (JavaScript) | "How many bytes do you think each `true` in that array takes?" |
+| Go and F# | Nudge 3. They start flat and their rung 1 is worth nothing |
+| Reached rung 4 with time left | Nudge 5, then 4 — in that order, see below |
+
+**Nudges 4, 5 and 6 are optional, and 4 is the one to be careful with.** Rungs 5 and 7 can
+measure *negative*, so those nudges point at something worth investigating rather than at a
+guaranteed win. Nudge 5 aims at rung 6, which is cheap and reliable, so hand it out before
+nudge 4 rather than after — that is a change from the order these are numbered in.
+
+Hold each one until a pair has been stuck for about fifteen minutes. Each is a question, not
+an instruction, and the follow up is only for when the question lands flat.
 
 ### 1. "How many times does your outer loop run? How many times does it need to?"
 
@@ -772,7 +856,18 @@ that broke, so point them at that rather than at their code.
 
 **Believing small numbers.** Run to run noise is about 5% on an idle machine. Anything under
 1.1x is not a result. If a pair is chasing a 3% change, tell them to close everything else
-and run it again.
+and run it again — and see [the machines you are measuring on](#the-machines-you-are-measuring-on),
+because the swing from a race landing on an efficiency core is far bigger than 5%.
+
+**Grinding on a rung that does not pay.** New, and now the one I would watch for hardest
+after the odds only off by one. A pair who spends an hour on the bitset in C# or JavaScript
+finishes *slower than they started*, and nothing tells them: the self test stays green
+because the code is perfectly correct, and the only signal is a lap count they may not have
+checked since before they began.
+
+The tell is a pair who have been quiet a long time on rung 5. The intervention is to ask
+what their **number** did, not what their code does — and if they have not re-run since
+starting, that is the lesson, not the bitset.
 
 **The F# pair fighting the language**, as above.
 
