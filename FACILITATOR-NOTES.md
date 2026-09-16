@@ -26,28 +26,36 @@ teammate who happens to have a newer laptop.
 | Pairs | The long stretch. Circulate, nudge, resist fixing it for them |
 | Debrief | Each pair says which rung gave them the most, and what surprised them |
 
-Mobbing the first rung matters more than it sounds. It gets a 2x on the board inside
-twenty minutes, gives everyone shared vocabulary, and removes the cold start that makes
-people feel stupid. It is the single highest value thing on this page.
+Mobbing the first rung matters more than it sounds. It puts a real number on the board
+inside twenty minutes — measured, the square root bound alone is 4.70x in C#, 2.2x in F#
+and Go, 6.02x in JavaScript — gives everyone shared vocabulary, and removes the cold start
+that makes people feel stupid. It is the single highest value thing on this page.
 
 ## The ladder
 
-Ordered by payoff per unit of effort, at n = 1,000,000.
+Ordered by payoff per unit of effort, at n = 1,000,000. The numbers are measured — see
+[Measured numbers](#measured-numbers) for the methodology and the other three languages.
+"Step" is what that rung alone buys, on top of everything below it, in C#.
 
-| # | Rung | What it buys |
-|---|---|---|
-| 0 | Baseline | — |
-| 1 | Growable list to fixed array | Removes ~20 reallocations and the copying with them |
-| 2 | Stop the outer loop at sqrt(n) | Removes a **full sequential read of the whole array**, 1M reads down to 1000 |
-| 3 | Start marking at `f*f`, not `2f` | Removes genuinely redundant writes |
-| 4 | Odds only | Halves operations *and* footprint. First rung with an index mapping, so the first one that breaks |
-| 5 | Bit packing | 8x smaller again, 16x combined. Trades instructions for footprint |
-| 6 | Stop refilling the array | Invert the sense so zero means prime, and zero initialisation does the work free |
-| 7 | Cache blocking | Sieve one L1 sized block with every prime before moving on |
-| 8 | Wheel factorization (mod 30, mod 210) | 8 residues per 30 integers instead of 15 |
+| # | Rung | Step | What it buys |
+|---|---|---|---|
+| 0 | Baseline | — | — |
+| 1 | Growable list to fixed array | **1.94x** | Removes ~20 reallocations and the copying with them |
+| 2 | Stop the outer loop at sqrt(n) | **2.42x** | Removes a **full sequential read of the whole array**, 1M reads down to 1000 |
+| 3 | Start marking at `f*f`, not `2f` | **1.08x** | Removes genuinely redundant writes — but far fewer than anyone expects |
+| 4 | Odds only | **2.27x** | Halves operations *and* footprint. First rung with an index mapping, so the first one that breaks |
+| 5 | Bit packing | **0.95x** | 8x smaller again, 16x combined. Trades instructions for footprint — and at this n, loses |
+| 6 | Stop refilling the array | **1.08x** | Invert the sense so zero means prime, and zero initialisation does the work free |
+| 7 | Cache blocking | **0.99x** | Sieve one L1 sized block with every prime before moving on. Does nothing here |
+| 8 | Wheel factorization (mod 30, mod 210) | **4.01x** | 8 residues per 30 integers instead of 15. The biggest rung on the board |
+| 9 | The micro stuff | **0.96x** | Bounds check removal and unrolling. Costs more than it pays |
 
-Rungs 1, 2 and 3 together are about five lines of change and are worth roughly **2.2x**
-in C#, measured, 610 laps to 1364. They are the mob session.
+Rungs 7, 8 and 9 are measured against rung 6 individually rather than stacked — see
+[past the ladder](#past-the-ladder).
+
+Rungs 1, 2 and 3 together are about five lines of change and are worth **5.09x** in C#.
+They are the mob session, and they are a bigger share of the total than the ordering
+above suggests: by the end of rung 2 a C# pair is already at 4.70x.
 
 ### Rung 1 — growable list to fixed array
 
@@ -68,6 +76,9 @@ array access.
 treats true as prime. A pair who swaps the type but forgets to fill will get "expected 4
 primes summing to 17, got 0 summing to 0" from the self test at size 10. That is the fix
 working, not a mystery. The elegant answer is to invert the sense instead, which is rung 6.
+
+**Measured: 1.94x in C#, 2.29x in JavaScript.** Nearly a doubling for a two line change,
+and the largest single step either language gets before the square root bound.
 
 ### Rung 2 — stop the outer loop at the square root
 
@@ -91,6 +102,10 @@ but overflows `int` above about 46,341, so hoisting `limit` out of the loop is b
 and safer. And a pair who bounds the loop at `n / 2` rather than `√n` has found something
 real but far weaker — ask them why half, and let them get to the square root themselves.
 
+**Measured: 2.42x in C#, 2.17x in F#, 2.22x in Go, 2.63x in JavaScript.** The most
+uniformly valuable rung on the board, and the only one that pays about the same
+everywhere. If a pair takes one thing from the session, this is the one.
+
 ### Rung 3 — start marking at `f*f`, not `2f`
 
 Every language.
@@ -108,6 +123,15 @@ is 49.
 inner loop can step `q += 2 * factor` instead of `q += factor` while still using a full
 array. That halves the marking work without any of the index remapping that rung 4 demands.
 It is a good place for a nervous pair to stop and take a win.
+
+**Measured: 1.08x in C#, 1.06x in F#, 1.08x in JavaScript, 0.99x in Go.** This is the
+smallest rung on the ladder, and it is worth knowing that before you send a pair after
+it. Once the square root bound is in, the outer loop only reaches 1000, so the writes
+this removes are the multiples `2f` through `f*f` for each prime — about 76,000 writes
+against roughly 2.5 million. Three percent of the work.
+
+It is still worth teaching, because the *reasoning* is the same reasoning that gets you
+to rung 4, and it costs one character. Just do not promise a pair a big number for it.
 
 ### Rung 4 — odds only
 
@@ -135,6 +159,11 @@ Expect the self test to fail here. That is what it is for. Point them at the siz
 and get them to work it by hand — at size 10 there are five indices representing 1, 3, 5, 7,
 9 and it takes two minutes on paper.
 
+**Measured: 2.27x in C#, 2.47x in F#, 2.34x in Go, 2.27x in JavaScript.** The second
+biggest rung on the ladder after the square root bound, and unlike rung 5 it pays in every
+language. If a pair only has time for one hard rung, this is the one — and it is the point
+at which most teams stop, which is why the debrief matters.
+
 ### Rung 5 — bit packing
 
 Every language, with a real divergence in the shift behaviour, below.
@@ -149,16 +178,34 @@ test          (words[i >> 6] & (1UL << i)) != 0
 set           words[i >> 6] |= 1UL << i
 ```
 
-**Why it works.** Not by doing less work — by touching less memory. See the counterintuitive
-note below.
+**What it is meant to buy.** Not less work — less memory touched. Whether that is worth
+anything once the data already fits in cache is the interesting part, and at n = 1,000,000
+the answer is mostly no.
 
-**This one is counterintuitive and teams will get it backwards.** Measured in C# at
-n = 1,000,000, the bitset is *slower per operation* than the byte array, 0.825 ns against
-0.626 ns, because a bit write is a read, a shift, an or and a write where a byte write is a
-single store. It is still about twice as fast overall, because it does half the operations
-in a sixteenth of the space. A pair who benchmarks per operation cost and concludes the
-bitset is a bad idea has measured correctly and reasoned wrongly. That is a good
-conversation to have rather than head off.
+**This one is counterintuitive, and the surprise is not the one this page used to
+claim.** A bit write is a read, a shift, an or and a write where a byte write is a single
+store, so the bitset is slower per operation — `cache-cliff` measures 0.825 ns against
+0.626 ns in C#. The old claim here was that it nonetheless wins about 2x overall. It does
+not. At n = 1,000,000 it is a **wash at best and a regression at worst**:
+
+| | C# | F# | Go | JavaScript |
+|---|---|---|---|---|
+| Rung 5 against rung 4 | **0.95x** | **1.12x** | **1.30x** | **0.96x** |
+
+The reason is that rung 4 already got the working set down to 500 KB, which fits in this
+machine's 1.25 MB L2. Shrinking it again to 61 KB moves it from L2 to L1, which is worth
+much less than the first move was, and the extra instructions per write have to be paid
+out of that smaller gain. Where the language's byte access was already cheap — C# and
+JavaScript — the instructions win and the rung goes backwards.
+
+**So a pair who benchmarks the bitset, finds it slower, and abandons it has measured
+correctly AND reasoned correctly.** Do not talk them out of it. The honest lesson is that
+"make the data smaller" stops paying once the data already fits, and the way to know is to
+measure rather than to assume. That is a better conversation than the one this page used
+to recommend.
+
+Rung 5 is still worth doing as a stepping stone: it is what makes rung 6 free, and rungs
+5 and 6 together beat rung 4 in three languages out of four.
 
 **Language divergence — shift masking.** C# and JavaScript mask the shift count
 automatically, so `1UL << i` in C# behaves as `1UL << (i & 63)` and `1 << i` in JavaScript
@@ -186,6 +233,18 @@ allocating. That is faster still, and it is a rules call — see the rules secti
 reader gets exactly the primes and composites the wrong way round, and the self test will
 report a wildly wrong count rather than an off-by-one.
 
+**Watch for, harder — the tail word.** This is the bug that actually costs people the
+afternoon, and it only appears once rungs 5 and 6 are *both* in. The word array holds
+`ceil(count / 64)` words, so the final word carries bits for numbers past n. Those bits
+are zero, and zero now means prime. At n = 1,000,000 that is 32 spare bits covering
+1,000,001 to 1,000,063, of which 1,000,003 is prime — so the sieve reports 78,499 and
+fails. Rung 5 on its own is safe because it fills with ones; a byte array is safe because
+it has no padding. Bound the reader by the candidate count, never by `words.Length * 64`.
+
+**Measured: 1.08x in C#, 1.04x in F#, 1.02x in Go, 1.00x in JavaScript.** Modest on its
+own, but it is what makes rung 5 pay its way — in C# rungs 5 and 6 together are 1.03x
+against rung 4, where rung 5 alone was 0.95x.
+
 ### Rung 7 — cache blocking
 
 Every language, and usually not worth it here.
@@ -199,6 +258,11 @@ working set is 61 KiB and already sits comfortably in L2, so there is not much l
 Blocking is the right answer at a hundred million, not at a million. Say this out loud
 before somebody spends an hour on it.
 
+**Measured: 0.99x against rung 6 in C#.** Not a small win — no win at all, and slightly
+negative once the per-block bookkeeping is paid for. This is now the strongest thing on
+this page, because it is a measurement rather than a prediction: if a pair wants to do it
+anyway, let them, but tell them the number first and let them choose.
+
 ### Rung 8 — wheel factorization
 
 The residues coprime to 30 are 1, 7, 11, 13, 17, 19, 23 and 29 — eight numbers in every
@@ -206,29 +270,66 @@ thirty, against fifteen in thirty for odds only. That is another 1.9x reduction 
 mod 210 takes it to 48 in 210.
 
 The complexity goes up sharply: marking patterns differ per residue class, and the index
-arithmetic stops being a single shift. Realistically this is a rung to *mention* in the
-debrief rather than one anybody reaches in an afternoon. If a pair is flying and wants it,
-let them, but make sure they have rung 6 first — it is a fraction of the effort for a
-comparable win.
+arithmetic stops being a single shift. Realistically this is still a rung to *mention* in
+the debrief rather than one anybody reaches in an afternoon.
+
+**Measured: 4.01x against rung 6 in C#, taking the full ladder to 47.68x.** This page used
+to call it "a comparable win" to rung 6 for far more effort. That was badly wrong. It is
+**the biggest single rung in the exercise by a factor of four**, and nothing else on the
+ladder is close.
+
+**Why it is so much larger than the 1.9x the space saving predicts.** Two things compound.
+The candidate count drops from 15 in 30 to 8 in 30, which is the 1.9x. But the marking loop
+also gets *cheaper per operation*, which is the part nobody predicts: for a fixed prime and
+a fixed residue class the bit position never changes, so the mask is loop invariant and the
+inner loop collapses to
+
+```
+data[byteIdx] |= mask;      // mask hoisted out of the loop
+byteIdx += p;
+```
+
+against the bitset's `words[q >> 6] |= 1UL << q`, which recomputes a variable shift on
+every single write. Losing the variable shift is worth roughly as much as halving the
+candidates.
+
+This is worth a minute in the debrief even though nobody will have built it, because it is
+the one rung where "touch less memory" and "do less work per touch" line up instead of
+trading off — which is the exact tension rung 5 loses to.
 
 ### Rung 9 — the micro stuff
 
-Only worth it after everything above. Bounds check removal in C# via `Unsafe.Add` or
-pointers, since the `q += factor` stride is not a shape the JIT can prove safe. Unrolling
-the inner loop over the eight bit positions a given prime touches within a byte, which repeat
-on a fixed cycle. Both are real, both are worth a few tens of percent, and both are a poor
-use of the session compared with rungs 4 to 6.
+Only worth it after everything above. Bounds check removal in C#, since the `q += factor`
+stride is not a shape the JIT can prove safe. Unrolling the inner loop over the eight bit
+positions a given prime touches within a byte, which repeat on a fixed cycle.
+
+**Pointers are not available here, and this page used to say they were.** `Race.csproj`
+sets no `<AllowUnsafeBlocks>`, and the csproj is off limits, so `fixed` and `ulong*` will
+not compile under the exercise's own rules. What does work is
+
+```
+Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(_words), q >> 6) |= 1UL << q;
+```
+
+because `Unsafe.Add` takes a `ref` rather than a pointer. `Span<T>` indexing still bounds
+checks, so reaching for `Span` is not the rung.
+
+**Measured: 0.96x against rung 6 in C#.** A regression. The bounds check was not the
+bottleneck — the memory traffic and the variable shift were — and removing it costs the JIT
+some of the range information it was using. Treat "both are worth a few tens of percent",
+which is what this page used to claim, as retired.
 
 ## Where the languages stop sharing a ladder
 
-Baselines measured on one machine, back to back:
+Baselines measured on one machine, back to back, and re-measured for the numbers on this
+page — see [Measured numbers](#measured-numbers). Laps are per five second race.
 
-| Language | Baseline laps | Starts with | Rung 1 applies? |
+| Language | Baseline laps | Starts with | Has a rung 1? |
 |---|---|---|---|
-| Go | 1224 | `[]bool` | No, already there |
-| F# | 1203 | `bool[]` | No, already there |
-| C# | 617 | `List<bool>` | **Yes** |
-| JavaScript | 395 | `new Array(n)` | **Yes, and it is the biggest rung in the whole exercise** |
+| Go | 1344 | `[]bool` | No, already flat |
+| F# | 1245 | `bool[]` | Nominally — `Array.init` to `Array.create`, but it measures **1.00x** |
+| C# | 650 | `List<bool>` | **Yes, 1.94x** |
+| JavaScript | 422 | `new Array(n)` | **Yes, 2.29x** — the biggest rung either language gets before the square root bound |
 
 ### C#
 
@@ -246,14 +347,26 @@ than the other languages do.
 every write pays for a check. Removing it needs `Unsafe.Add` or pointers, which is a fair
 late rung.
 
-Expect the largest headline number in the room. A full odds only bitset measured **12.28x**
-against the C# baseline.
+**Measured: a full odds only bitset is 11.89x against the C# baseline**, and 12.02x if you
+allow a pooled buffer.
+
+Note that C# does **not** get the largest headline number, despite starting furthest back —
+JavaScript does, at 14.08x. And the LOH story above, while real, is not what decides rung 5:
+C# is one of the two languages where bit packing measures as a *regression*. See rung 5.
 
 ### F#
 
-`Array.init sieveSize (fun _ -> true)` is **one million closure invocations**.
-`Array.create sieveSize true` does a vectorised fill instead. F# only rung, nearly free, and
-it is sitting right there in `Sieve.create`.
+`Array.init sieveSize (fun _ -> true)` is **one million closure invocations**, where
+`Array.create sieveSize true` does a vectorised fill. It is an F# only rung and it is
+sitting right there in `Sieve.create`, so it looks like free money.
+
+**Measured: 1.00x. It buys nothing at all.** The JIT inlines that closure and the fill ends
+up costing the same either way. Worth knowing before you send an F# pair after it as their
+opening move — send them at the square root bound instead, which is 2.17x.
+
+It is still worth *showing* in the debrief, because "the obvious inefficiency was already
+being optimised away, and the only way to find that out was to measure" is exactly the
+lesson the session is for.
 
 The real F# problem is cultural, not technical. The fastest F# sieve is a mutable array in a
 `for` loop and looks like C# in a false moustache. A pair reaching for idiomatic immutable
@@ -263,7 +376,11 @@ loud at the start.
 ### Go
 
 Starts strongest and has the shortest ladder, so it will post the **smallest multiplier**.
-Make sure the team knows that is the starting point's fault, not theirs.
+Measured at **6.82x**, against JavaScript's 14.08x for the same insights. Make sure the team
+knows that is the starting point's fault, not theirs.
+
+Go is also the language that rewards bit packing most — **1.30x** for rung 5, where C# and
+JavaScript both go backwards.
 
 Its distinctive win is rung 6. `make([]bool, n)` is already zeroed and the starting point
 then loops over the whole thing writing `true`. Inverting the sense so `false` means prime
@@ -298,28 +415,236 @@ access. Second, the bitset in JavaScript is essentially **flat across the whole 
 1.0x from smallest to largest, because 61 KiB never leaves cache.
 
 The consequence is that JavaScript's ladder is reordered. `Array` to `Uint8Array` is rung 1
-and worth about 2.7x per operation on its own. The bitset, which is the headline rung in C#,
-adds comparatively little at n = 1,000,000 because `Uint8Array` is already fast and already
-small enough.
+and worth **2.29x** on its own.
+
+The bitset does not merely add little — **it takes it away**. Rung 5 measures **0.96x** and
+rung 6 does not recover it, so JavaScript's best result in rungs 1 to 6 is rung 4, the odds
+only `Uint8Array`, at **14.73x**; the full bitset ladder lands slightly behind at 14.08x.
+`Uint8Array` is already fast and already small enough, and the 32-bit shift-and-mask work
+costs more than the extra shrink saves.
+
+A JavaScript pair who reports that the bitset made things worse has done the exercise
+correctly. Take the result seriously in front of the room.
 
 One more divergence: **JavaScript bitwise operators are 32 bit**, so a bitset wants
 `Uint32Array` with `>>> 5` and `& 31`, not the 64 bit word layout the .NET versions use.
 `BigUint64Array` involves BigInt and is slower, not faster.
 
-## Expected multipliers
+## Measured numbers
 
-Rough, from one machine, and the point is the ordering rather than the numbers:
+Everything below was measured in one session on one machine. Reference implementations of
+every rung are in `facilitator-solutions/`, and `measure.ps1` there will regenerate all of
+it on yours in about twenty-five minutes. **Do that before you quote any of it**, because
+the ratios move with cache sizes and runtime versions, not just the absolute laps.
 
-| Language | Plausible range | Why |
+Cumulative speedup against each language's own untouched starting point:
+
+| # | Rung | C# | F# | Go | JavaScript |
+|---|---|---|---|---|---|
+| 0 | Baseline | 1.00x | 1.00x | 1.00x | 1.00x |
+| 1 | Flat / typed array | **1.94x** | 1.00x | — | **2.29x** |
+| 2 | Stop at sqrt(n) | **4.70x** | **2.19x** | **2.22x** | **6.02x** |
+| 3 | Mark from `f*f` | 5.09x | 2.31x | 2.20x | 6.49x |
+| 4 | Odds only | **11.56x** | **5.69x** | **5.15x** | **14.73x** |
+| 5 | Bit packing | 10.99x | 6.36x | **6.70x** | 14.07x |
+| 6 | Zero means prime | **11.89x** | **6.62x** | **6.82x** | 14.08x |
+
+Baselines: C# 650 laps, F# 1245, Go 1344, JavaScript 422.
+
+Three things to take from that table.
+
+**The best result is not always rung 6.** In JavaScript it is rung 4, at 14.73x — the
+bitset costs more than it saves there, and rung 6 does not win it back. A JavaScript pair
+who stops at odds only has the best number available to them.
+
+**The spread between languages is about the starting point, not the pair.** Go tops out at
+6.82x and JavaScript at 14.73x for exactly the same six insights. Say this before anyone
+compares.
+
+**Two of the six rungs carry most of the win** — the square root bound and odds only,
+between them 10.7x of C#'s 11.9x. Rungs 3, 5 and 6 are each within a few percent of
+nothing, and rung 5 is negative in half the languages.
+
+### Past the ladder
+
+C# only, each measured independently against rung 6 rather than stacked on each other —
+stacking a regression would contaminate everything above it.
+
+| Variant | Against rung 6 | Cumulative | Verdict |
+|---|---|---|---|
+| 7 — cache blocking | **0.99x** | 11.77x | No win at n = 1,000,000. The data already fits |
+| 8 — wheel, mod 30 | **4.01x** | **47.68x** | By far the biggest rung in the exercise |
+| 9 — bounds check removal | **0.96x** | 11.47x | A regression |
+| Pooled buffer *(off ladder)* | **1.01x** | 12.02x | Nothing. See the rules call |
+
+### How it was measured
+
+| | |
+|---|---|
+| Machine | Intel i9-12900HK, 6 P-cores + 8 E-cores, 48 KiB L1d and 1.25 MB L2 per P-core, 24 MB L3 |
+| OS | Windows 11 Pro 10.0.26200 |
+| Runtimes | .NET 10.0.401, Node v24.13.0, Go 1.27.0 |
+| Repetitions | 5 per configuration, 31 configurations, shuffled, baselines inside the shuffle |
+| Statistic | Maximum laps per second across the 5 |
+| Affinity | Pinned to the 12 P-core logical CPUs |
+| Date | September 2026 |
+
+Four choices in there are worth knowing about, because they change the answers.
+
+**Laps per second, not laps.** Every harness tests its `while` condition before each lap,
+so a run overruns five seconds by up to one lap — 0.2% at the slowest baseline.
+
+**Maximum, not median or mean.** Laps completed in a fixed window is one-sided noise:
+interference removes laps, nothing adds them. The maximum is the best estimate of what the
+machine can actually do. This is not academic — one repetition ran 2.3% slow across the
+board, and in it the Go baseline dropped 25% and F# rung 3 dropped 22%. A median would have
+carried part of that into the published numbers; the maximum discards it.
+
+**Pinned to all twelve P-core threads, not to one core.** Excluding the E-cores matters — a
+sweep of the same variant across all twenty logical CPUs measured 1940 laps/s on CPUs 0–11
+and 950–980 on CPUs 12–19, so an unpinned race that lands on an E-core reads half speed.
+But pinning to a *single* core is worse than not pinning at all: .NET's concurrent GC, Go's
+concurrent mark and V8's scavenger all run on other threads, and crowding them onto the
+sieve's own core costs in proportion to allocation per lap — which is exactly what each
+rung reduces. That would have inflated the very rungs being measured.
+
+**Shuffled, with the baselines shuffled in too.** Running 31 configurations in order over
+twenty minutes on a laptop confounds rung number with how hot the machine has got.
+Measured drift across the session was under 0.5% either side, apart from the one slow
+repetition noted above.
+
+### Numbers this page used to carry
+
+Regenerating everything changed several figures that had been on this page for a while. If
+you have taught from it before, these are the ones that moved:
+
+| Was | Now | |
 |---|---|---|
-| JavaScript | Largest | Worst starting point, two free rungs before the interesting ones |
-| C# | ~12x measured | `List<bool>` plus the LOH cliff |
-| F# | Middle | Already on `bool[]`, but `Array.init` is a gift |
-| Go | Smallest | Best starting point, shortest ladder |
+| Rungs 1–3 worth "roughly 2.2x" in C# | **5.09x** | The old figure came from a different session and a slower rung 2 |
+| C# baseline 617 laps, and 610 elsewhere on the page | **650** | The page contradicted itself; one measured set now |
+| Full C# bitset "12.28x" | **11.89x** | Same ballpark, re-measured |
+| Bit packing "about twice as fast overall" | **0.95x–1.30x** | Negative in C# and JavaScript |
+| The wheel is "a comparable win" to rung 6 | **4.01x** | The largest rung in the exercise |
+| Bounds check removal "worth a few tens of percent" | **0.96x** | And pointers will not compile |
+| Pooling is "a large win" | **1.01x** | Which makes the rules call much easier |
 
-**Tell the teams this.** Scoring against your own baseline is fair across machines but not
-across languages, and a Go pair doing excellent work may post 4x while a C# pair posts 12x
-for exactly the same insight.
+The per-operation tables from `cache-cliff` elsewhere on this page are **not** comparable
+with any of these. They measure the cost of a single marking operation in nanoseconds with
+a different tool; the numbers here are whole-sieve throughput ratios. Do not try to
+reconcile them.
+
+## The solutions
+
+Every rung, in every language, is implemented in `facilitator-solutions/`. Each file is a
+complete drop-in replacement for that race's sieve file with the same public API, so you can
+copy one over the real thing and run the race unchanged:
+
+```
+cp facilitator-solutions/csharp/rung-6-zero-means-prime.cs csharp/Sieve.cs
+cd csharp && dotnet run -c Release
+```
+
+Each carries a header explaining what the rung does, why it works and what breaks — written
+to be read aloud in a debrief. The directory's own README covers the measurement method.
+
+**They are verified beyond the self test.** The harness checks sizes 10 through 100,000,
+but every size it tests is composite, so it cannot tell "primes below n" from "primes up to
+n"; and none is odd, so it cannot catch an index count of `n/2` that should be `(n+1)/2`.
+Both would pass here and then bite a team who copied the answer. Every solution was checked
+against an independent trial-division reference at twenty sizes including 0, 1, 2, 3, 9, 11,
+29, 31, 49, 101, 127, 999, 9,973 and 100,001.
+
+### The end of the ladder
+
+C#, rung 6 — the whole sieve is these fifteen lines:
+
+```csharp
+public Sieve(int sieveSize)
+{
+	_sieveSize = sieveSize;
+	_count = (sieveSize + 1) / 2;              // odd candidates only
+	_words = new ulong[(_count + 63) / 64];    // already zeroed, and zero means prime
+}
+
+public void Run()
+{
+	int limit = (int)Math.Sqrt(_sieveSize);
+
+	for (int factor = 3; factor <= limit; factor += 2)
+	{
+		int f = factor >> 1;
+
+		if ((_words[f >> 6] & (1UL << f)) == 0)
+		{
+			for (int q = (factor * factor) >> 1; q < _count; q += factor)
+			{
+				_words[q >> 6] |= 1UL << q;
+			}
+		}
+	}
+}
+```
+
+Go, the same thing, and note the shift mask that C# gets for free:
+
+```go
+for factor := 3; factor <= limit; factor += 2 {
+	f := factor >> 1
+
+	if sieve.words[f>>6]&(1<<(uint(f)&63)) == 0 {
+		for q := (factor * factor) >> 1; q < count; q += factor {
+			sieve.words[q>>6] |= 1 << (uint(q) & 63)   // &63 is NOT optional in Go
+		}
+	}
+}
+```
+
+F# has to carry its own size, because a `uint64[]` of 7,813 words cannot tell you whether n
+was 1,000,000 or 1,000,063:
+
+```fsharp
+type State = { Words: uint64[]; Size: int }
+
+let create sieveSize =
+    let count = (sieveSize + 1) / 2
+    { Words = Array.zeroCreate ((count + 63) / 64); Size = sieveSize }
+```
+
+JavaScript's best result is **rung 4**, not rung 6 — the bitset costs more than it saves:
+
+```js
+const count = (sieveSize + 1) >> 1;
+const sieve = new Uint8Array(count);
+sieve.fill(1);
+// ...
+for (let factor = 3; factor <= limit; factor += 2) {
+	if (sieve[factor >> 1]) {
+		for (let q = (factor * factor) >> 1; q < count; q += factor) {
+			sieve[q] = 0;
+		}
+	}
+}
+```
+
+### Why the wheel wins
+
+The mod 30 wheel's inner loop is the reason it is four times faster than rung 6, and it is
+worth putting on a screen next to the bitset loop above. For a fixed prime and a fixed
+residue class the bit position never changes, so the mask leaves the loop entirely:
+
+```csharp
+byte mask = (byte)(1 << BitIndex[product % 30]);   // loop invariant
+
+while (byteIdx < byteCount)
+{
+	_data[byteIdx] |= mask;      // no shift, no recomputation
+	byteIdx += p;
+}
+```
+
+Against the bitset's `_words[q >> 6] |= 1UL << q`, which recomputes a variable shift on
+every write. Fewer candidates *and* less work per candidate — the only rung on the board
+where those two pull the same way.
 
 ## Nudges, in order
 
@@ -388,8 +713,11 @@ pair it is `cd cache-cliff && node --expose-gc cache-cliff.mjs`, and they should
 the memory table at the top before anything else — eight bytes per candidate tends to end
 the discussion.
 
-*Wrong turn to expect:* they benchmark the bitset, find it is slower per operation, and
-abandon it. They have measured correctly — see rung 5. Ask what they are dividing by.
+*What to expect:* they benchmark the bitset, find it slower, and abandon it. **They are
+right.** In C# and JavaScript rung 5 measures as a regression, and this nudge can therefore
+send a pair backwards. Aim it at rung 4 — odds only, which pays 2.3x everywhere — and treat
+the bitset as the follow-on question "and does making it smaller *again* help?", whose
+honest answer here is usually no. See rung 5.
 
 ### 5. "You allocate a fresh one every lap. Does it need to be fresh, or just clean?"
 
@@ -412,9 +740,13 @@ pair who are flying.
 *You are done here when* they are talking about skipping multiples of 3 and 5 as well as 2,
 or about working in blocks that fit in cache.
 
-*Caution:* this is the point to say that blocking will not pay much at a million, and that
-the wheel is a large amount of work for a modest win. Otherwise you have just sent your
-strongest pair down the longest road on the board.
+*Caution:* blocking measures 0.99x at a million — say so before they spend an hour on it.
+
+The wheel is the opposite, and this page had it wrong for a long time: it measures **4.01x**
+against rung 6, the biggest rung in the exercise. It is still half a day's work and nobody
+will finish it in an afternoon, so it remains a debrief item rather than a nudge. But if a
+strong pair asks whether it is worth it, the honest answer is now "yes, enormously, and you
+will not finish today".
 
 ### When not to nudge
 
@@ -427,9 +759,13 @@ does not spoil anything — it shows them the wall without naming the rung.
 
 ## Failure modes to watch for
 
-**Stopping at 2x.** The most common one by far. A pair gets the array and the square root
-bound, sees a good number, and thinks they are done. Prevention is one sentence in the
-briefing: there are at least eight rungs and 10x is normal.
+**Stopping early.** The most common one by far. A pair gets the array and the square root
+bound, sees a good number, and thinks they are done — and because rung 2 is worth 2.2x to
+6x on its own, that number really is good. Prevention is one sentence in the briefing:
+there are nine rungs, and odds only roughly doubles whatever they have when they get there.
+
+Quote the finishing figures for their language rather than a single headline, because they
+are not close to each other: **C# 11.9x, F# 6.6x, Go 6.8x, JavaScript 14.7x.**
 
 **The odds only off by one.** Everybody hits it. The self test catches it and names the size
 that broke, so point them at that rather than at their code.
@@ -447,9 +783,17 @@ because it is a genuinely clever observation about how benchmarks get gamed.
 ## Rules calls you will probably have to make
 
 **Pooling the array across laps.** The constructor is inside the timed loop, so a static or
-pooled buffer that the constructor merely clears is a large win. My suggestion is allow it,
-because "do not allocate in a hot loop" is a real and valuable lesson, but require that the
-sieve is genuinely recomputed each lap. Decide before someone asks.
+pooled buffer that the constructor merely clears looks like it should be a large win.
+
+**Measured: 1.01x against rung 6. It is worth nothing**, which makes this the easiest call
+on the list — allow it, and it will not distort anybody's number. The reason is that by
+rung 6 the allocation is 61 KiB on the gen0 path and the runtime hands it back already
+zeroed; there is nothing left to save. Pooling only looks valuable while the array is still
+a megabyte, and by then the team has better rungs available.
+
+Require that the sieve is genuinely recomputed each lap either way. And if a pair pools
+early, at rung 1 or 2, it *will* help them — which is worth letting them discover and then
+measure again after rung 6, when it has quietly stopped mattering.
 
 **Changing the sieve size.** No. It lives in the off limits file, and the validation data
 depends on it.
