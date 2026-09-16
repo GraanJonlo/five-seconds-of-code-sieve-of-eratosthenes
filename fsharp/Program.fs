@@ -1,7 +1,9 @@
 namespace DragRace
 
 module Main =
+    open System
     open System.Diagnostics
+    open System.IO
 
     // Everything in this file is off limits. Sieve.fs is the only file you may edit.
 
@@ -21,6 +23,8 @@ module Main =
         |> Map.ofList
 
     let sieveSize = 1_000_000
+
+    let baselineFile = "baseline.txt"
 
     // Self test before the race. Sieving small ranges first means an off-by-one in a
     // rewritten Sieve gets reported against the size that broke it, instead of showing
@@ -68,5 +72,23 @@ module Main =
 
             printfn "Laps: %d Time: %f #Primes: %d Valid: %b" laps stopwatch.Elapsed.TotalSeconds
                 (List.length primes) isValid
+
+            // Record the first valid result as this machine's baseline, then report every
+            // later run as a multiple of it. Run once before changing anything to get an
+            // honest one.
+            if isValid then
+                let recorded =
+                    if File.Exists baselineFile then
+                        Int32.TryParse(File.ReadAllText(baselineFile).Trim())
+                    else
+                        false, 0
+
+                match recorded with
+                | true, baseline when baseline > 0 ->
+                    printfn "Speedup: %.2fx baseline (%d laps)" (float laps / float baseline) baseline
+                | _ ->
+                    File.WriteAllText(baselineFile, string laps)
+                    printfn "Baseline recorded: %d laps. Now optimise Sieve.fs. Delete %s to re-record."
+                        laps baselineFile
 
             if isValid then 0 else 1

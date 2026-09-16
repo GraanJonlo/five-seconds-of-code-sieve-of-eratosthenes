@@ -1,7 +1,16 @@
+// This is the only file you may edit.
+//
+// The rules:
+//   * It has to stay a sieve of Eratosthenes.
+//   * getSieve and run are inside the timed loop, results is not. run must leave
+//     the sieve fully computed - moving sieving work into results is scoring laps
+//     you never ran.
+//   * No 3rd party libraries, all code must be your own.
+
 exports.getSieve = (sieveSize) => {
 	const sieve = new Array(sieveSize + 1);
 
-	for (let i = 0; i < sieveSize; i++) {
+	for (let i = 0; i <= sieveSize; i++) {
 		sieve[i] = true;
 	}
 

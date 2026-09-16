@@ -1,3 +1,6 @@
+# Per-machine race baseline, recorded on first run
+baseline.txt
+
 bin/
 obj/
 

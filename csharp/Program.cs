@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using Race;
 
 // Everything in this file is off limits. Sieve.cs is the only file you may edit.
@@ -76,5 +77,25 @@ bool valid = primes.Count == expectedPrimeCount && primeSum == expectedPrimeSum;
 
 Console.WriteLine(
 	$"Laps: {laps} Time: {stopwatch.Elapsed.TotalSeconds} #Primes: {primes.Count} Valid: {valid}");
+
+// Record the first valid result as this machine's baseline, then report every later
+// run as a multiple of it. Run once before changing anything to get an honest one.
+if (valid)
+{
+	const string baselineFile = "baseline.txt";
+
+	if (File.Exists(baselineFile)
+	    && int.TryParse(File.ReadAllText(baselineFile).Trim(), out int baseline)
+	    && baseline > 0)
+	{
+		Console.WriteLine($"Speedup: {(double)laps / baseline:F2}x baseline ({baseline} laps)");
+	}
+	else
+	{
+		File.WriteAllText(baselineFile, laps.ToString());
+		Console.WriteLine(
+			$"Baseline recorded: {laps} laps. Now optimise Sieve.cs. Delete {baselineFile} to re-record.");
+	}
+}
 
 return valid ? 0 : 1;
