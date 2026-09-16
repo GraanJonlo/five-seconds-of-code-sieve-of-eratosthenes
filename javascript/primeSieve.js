@@ -7,7 +7,7 @@
 //     you never ran.
 //   * No 3rd party libraries, all code must be your own.
 
-exports.getSieve = (sieveSize) => {
+export const getSieve = (sieveSize) => {
 	const sieve = new Array(sieveSize + 1);
 
 	for (let i = 0; i <= sieveSize; i++) {

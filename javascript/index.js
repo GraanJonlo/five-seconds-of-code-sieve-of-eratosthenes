@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
-const fs = require("node:fs");
+import fs from "node:fs";
 
-const primeSieve = require("./primeSieve");
+import { getSieve } from "./primeSieve.js";
 
 // Everything in this file is off limits. primeSieve.js is the only file you may edit.
 
@@ -24,6 +24,8 @@ const validationData = {
 const sieveSize = 1_000_000;
 const baselineFile = "baseline.txt";
 
+const sum = (primes) => primes.reduce((total, prime) => total + prime, 0);
+
 const readBaseline = () => {
 	try {
 		const baseline = Number.parseInt(fs.readFileSync(baselineFile, "utf8").trim(), 10);
@@ -33,64 +35,76 @@ const readBaseline = () => {
 	}
 };
 
-const sum = (primes) => primes.reduce((total, prime) => total + prime, 0);
-
 // Self test before the race. Sieving small ranges first means an off-by-one in a
 // rewritten sieve gets reported against the size that broke it, instead of showing
 // up as a bare "Valid: false" five seconds later.
-for (const size of [10, 100, 1_000, 10_000, 100_000]) {
-	const candidate = primeSieve.getSieve(size);
-	candidate.run();
+const selfTest = () => {
+	for (const size of [10, 100, 1_000, 10_000, 100_000]) {
+		const candidate = getSieve(size);
+		candidate.run();
 
-	const candidatePrimes = candidate.results();
-	const candidateSum = sum(candidatePrimes);
-	const expected = validationData[size];
+		const candidatePrimes = candidate.results();
+		const candidateSum = sum(candidatePrimes);
+		const expected = validationData[size];
 
-	if (candidatePrimes.length !== expected.count || candidateSum !== expected.sum) {
-		console.log(
-			`Self test FAILED at sieve size ${size}: expected ${expected.count} primes summing to ${expected.sum}, got ${candidatePrimes.length} summing to ${candidateSum}`
-		);
-		process.exit(1);
+		if (candidatePrimes.length !== expected.count || candidateSum !== expected.sum) {
+			return `Self test FAILED at sieve size ${size}: expected ${expected.count} primes summing to ${expected.sum}, got ${candidatePrimes.length} summing to ${candidateSum}`;
+		}
 	}
-}
 
-console.log("Self test passed");
+	return null;
+};
 
-let laps = 0;
-let sieve = primeSieve.getSieve(sieveSize);
+const race = () => {
+	const failure = selfTest();
 
-const startTime = performance.now();
+	if (failure !== null) {
+		console.log(failure);
+		return 1;
+	}
 
-while (performance.now() - startTime < 5000) {
-	sieve = primeSieve.getSieve(sieveSize);
-	sieve.run();
-	laps++;
-}
+	console.log("Self test passed");
 
-const elapsed = performance.now() - startTime;
+	let laps = 0;
+	let sieve = getSieve(sieveSize);
 
-const primes = sieve.results();
-const primeSum = sum(primes);
-const expected = validationData[sieveSize];
-const valid = primes.length === expected.count && primeSum === expected.sum;
+	const startTime = performance.now();
 
-console.log(
-	`Laps: ${laps} Time: ${elapsed / 1000} #Primes: ${primes.length} Valid: ${valid}`
-);
+	while (performance.now() - startTime < 5000) {
+		sieve = getSieve(sieveSize);
+		sieve.run();
+		laps++;
+	}
 
-if (!valid) {
-	process.exit(1);
-}
+	const elapsed = performance.now() - startTime;
 
-// Record the first valid result as this machine's baseline, then report every later run
-// as a multiple of it. Run once before changing anything to get an honest one.
-const baseline = readBaseline();
+	const primes = sieve.results();
+	const primeSum = sum(primes);
+	const expected = validationData[sieveSize];
+	const valid = primes.length === expected.count && primeSum === expected.sum;
 
-if (baseline !== null) {
-	console.log(`Speedup: ${(laps / baseline).toFixed(2)}x baseline (${baseline} laps)`);
-} else {
-	fs.writeFileSync(baselineFile, String(laps));
 	console.log(
-		`Baseline recorded: ${laps} laps. Now optimise primeSieve.js. Delete ${baselineFile} to re-record.`
+		`Laps: ${laps} Time: ${elapsed / 1000} #Primes: ${primes.length} Valid: ${valid}`
 	);
-}
+
+	if (!valid) {
+		return 1;
+	}
+
+	// Record the first valid result as this machine's baseline, then report every later
+	// run as a multiple of it. Run once before changing anything to get an honest one.
+	const baseline = readBaseline();
+
+	if (baseline !== null) {
+		console.log(`Speedup: ${(laps / baseline).toFixed(2)}x baseline (${baseline} laps)`);
+	} else {
+		fs.writeFileSync(baselineFile, String(laps));
+		console.log(
+			`Baseline recorded: ${laps} laps. Now optimise primeSieve.js. Delete ${baselineFile} to re-record.`
+		);
+	}
+
+	return 0;
+};
+
+process.exitCode = race();

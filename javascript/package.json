@@ -2,13 +2,14 @@
 	"name": "5-seconds-of-code",
 	"version": "1.0.0",
 	"description": "Vroom!",
+	"type": "module",
 	"main": "index.js",
 	"scripts": {
-		"test": "echo \"Error: no test specified\" && exit 1"
+		"race": "node ."
 	},
 	"author": "Andrew Grant (https://www.codecomputerlove.com/)",
 	"license": "ISC",
 	"engines": {
-		"node": ">=18"
+		"node": ">=22"
 	}
 }

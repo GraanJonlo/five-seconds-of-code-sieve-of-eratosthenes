@@ -48,7 +48,7 @@ You only need the toolchain for the race you are running.
 
 * The C# and F# races need the .NET 10 SDK or newer. Both projects target `net10.0`,
   which gives you C# 14 and F# 10 by default
-* The JavaScript race needs Node 18 or newer
+* The JavaScript race needs Node 22 or newer, and is an ES module
 * The Go race needs Go 1.19 or newer
 
 The starting points use nothing newer than C# 12 and F# 8, so you do not need the latest
@@ -70,6 +70,8 @@ The Node race
 ```
 node .
 ```
+
+or `node --run race`.
 
 The Go race
 
