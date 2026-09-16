@@ -26,6 +26,18 @@ off-by-one is reported against the size that broke it rather than as a bare
 returning the right number of wrong answers does not pass. A race that fails validation
 exits with a non-zero status.
 
+## AI assistants
+
+If you use Claude Code, Copilot, Cursor or anything similar, there is an `AGENTS.md` in the
+root (and a `CLAUDE.md` pointing at it) asking the assistant to explain rather than
+implement — to help you read an error, reason about your measurements and debug your own
+attempt, but not to hand you a finished fast sieve.
+
+It is guidance, not a lock, and it only works if you want it to. Asked plainly, any of these
+tools will write a near optimal sieve in one shot and there will be nothing left for you to
+learn. Facilitators who would rather ban assistants outright, or allow them freely, should
+say so at the start and delete these two files if they are in the way.
+
 ## Scoring
 
 Laps are not comparable between machines or between languages, so each race scores you
