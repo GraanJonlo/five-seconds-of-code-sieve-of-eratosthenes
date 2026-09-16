@@ -6,16 +6,27 @@ For this challenge you are presented with an algorithm for finding prime numbers
 
 Working in pairs, see how far you can optimize the code. Significant gains are possible.
 
-##
+## The rules
 
-* Your solution uses the sieve of Erastosthenes
+* Your solution uses the sieve of Eratosthenes
 * Your solution runs for at least 5 seconds, and stops as quickly as possible after that
 * Your solution calculates all the primes up to 1,000,000
 * No 3rd party libraries are used, all code must be your own
+* You may only edit the sieve itself - `Sieve.cs`, `Sieve.fs`, `primeSieve.js`, `primeSieve.go`.
+  The timing and validation code is off limits
+* The sieve must be fully computed by the time the run step finishes. Collecting the
+  results afterwards is not timed, so moving sieving work into the results step is
+  scoring laps you never ran
+
+The .NET races self test at sieve sizes 10 through 100,000 before the clock starts, so an
+off-by-one is reported against the size that broke it rather than as a bare
+`Valid: False` five seconds later. Both the number of primes and their sum are checked -
+returning the right number of wrong answers does not pass. The Node and Go races still
+only check the count, at 1,000,000, after the race.
 
 ## Prerequisites
 
-.NET 6+, Node 18+ or Go 1.19+
+.NET 10+, Node 18+ or Go 1.19+
 
 ## Execution
 

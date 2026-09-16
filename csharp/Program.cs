@@ -1,30 +1,60 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using Race;
 
-// Top level timing code is off limits
+// Everything in this file is off limits. Sieve.cs is the only file you may edit.
 
-Dictionary<int, int> validationData = new Dictionary<int, int>
+// Historical data for validating our results - the number of primes to be found
+// under some limit, and the sum of those primes, such as 168 primes under 1,000
+// which sum to 76,127. The sum is checked as well as the count so that returning
+// the right number of wrong answers does not pass.
+Dictionary<int, (int Count, long Sum)> validationData = new()
 {
-	{10, 4}, // Historical data for validating our results - the number of primes
-	{100, 25}, // to be found under some limit, such as 168 primes under 1000
-	{1_000, 168},
-	{10_000, 1229},
-	{100_000, 9592},
-	{1_000_000, 78498},
-	{10_000_000, 664579},
-	{100_000_000, 5761455}
+	{10, (4, 17L)},
+	{100, (25, 1_060L)},
+	{1_000, (168, 76_127L)},
+	{10_000, (1_229, 5_736_396L)},
+	{100_000, (9_592, 454_396_537L)},
+	{1_000_000, (78_498, 37_550_402_023L)},
+	{10_000_000, (664_579, 3_203_324_994_356L)},
+	{100_000_000, (5_761_455, 279_209_790_387_276L)}
 };
 
 const int sieveSize = 1_000_000;
+
+// Self test before the race. Sieving small ranges first means an off-by-one in a
+// rewritten Sieve gets reported against the size that broke it, instead of showing
+// up as a bare "Valid: False" five seconds later.
+foreach (int size in new[] { 10, 100, 1_000, 10_000, 100_000 })
+{
+	Sieve candidate = new Sieve(size);
+	candidate.Run();
+	List<int> candidatePrimes = candidate.Result();
+
+	(int expected, long expectedSum) = validationData[size];
+	long candidateSum = 0;
+	foreach (int prime in candidatePrimes)
+	{
+		candidateSum += prime;
+	}
+
+	if (candidatePrimes.Count != expected || candidateSum != expectedSum)
+	{
+		Console.WriteLine(
+			$"Self test FAILED at sieve size {size}: expected {expected} primes summing to {expectedSum}, got {candidatePrimes.Count} summing to {candidateSum}");
+		return 1;
+	}
+}
+
+Console.WriteLine("Self test passed");
+
 int laps = 0;
 Sieve? sieve = null;
 
 var stopwatch = Stopwatch.StartNew();
 
-while (stopwatch.Elapsed.Seconds < 5)
+while (stopwatch.Elapsed.TotalSeconds < 5)
 {
 	sieve = new Sieve(sieveSize);
 	sieve.Run();
@@ -35,61 +65,16 @@ stopwatch.Stop();
 
 List<int> primes = sieve != null ? sieve.Result() : [];
 
-bool correctNumberOfPrimesFound = primes.Count == validationData[sieveSize];
+long primeSum = 0;
+foreach (int prime in primes)
+{
+	primeSum += prime;
+}
+
+(int expectedPrimeCount, long expectedPrimeSum) = validationData[sieveSize];
+bool valid = primes.Count == expectedPrimeCount && primeSum == expectedPrimeSum;
 
 Console.WriteLine(
-	$"Laps: {laps} Time: {stopwatch.Elapsed.TotalSeconds} #Primes: {primes.Count} Valid: {correctNumberOfPrimesFound}");
+	$"Laps: {laps} Time: {stopwatch.Elapsed.TotalSeconds} #Primes: {primes.Count} Valid: {valid}");
 
-namespace Race
-{
-	// The Sieve class is where you are allowed to make changes
-	public class Sieve
-	{
-		private readonly int _sieveSize;
-		private readonly List<bool> _sieve;
-
-		public Sieve(int sieveSize)
-		{
-			_sieveSize = sieveSize;
-			_sieve = [];
-			for (int i = 0; i < sieveSize + 1; i++)
-			{
-				_sieve.Add(true);
-			}
-		}
-
-		public void Run()
-		{
-			for (int factor = 2; factor <= _sieveSize; factor++)
-			{
-				if (_sieve[factor])
-				{
-					int q = factor + factor;
-					while (q <= _sieveSize)
-					{
-						_sieve[q] = false;
-						q += factor;
-					}
-				}
-			}
-		}
-
-		public List<int> Result()
-		{
-			int current = 2;
-			List<int> primes = [];
-
-			foreach (var number in _sieve.Skip(2))
-			{
-				if (number)
-				{
-					primes.Add(current);
-				}
-
-				current++;
-			}
-
-			return primes;
-		}
-	}
-}
+return valid ? 0 : 1;
