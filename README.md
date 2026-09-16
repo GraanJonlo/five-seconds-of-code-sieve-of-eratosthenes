@@ -41,18 +41,57 @@ say so at the start and delete these two files if they are in the way.
 ## Scoring
 
 Laps are not comparable between machines or between languages, so each race scores you
-against your own starting point. **Run your race once before you change anything.** The
-first valid result is written to `baseline.txt` in that race's directory, and every run
-after that reports a multiple of it:
+against your own starting point. The first valid result is written to `baseline.txt` in
+that race's directory, and every run after that reports a multiple of it:
 
 ```
 Laps: 2451 Time: 5.0018 #Primes: 78498 Valid: True
 Speedup: 4.02x baseline (610 laps)
 ```
 
-Delete `baseline.txt` to re-record. Expect roughly 5% run to run noise on an otherwise
-idle machine, so anything under about 1.1x is not a real gain - close your laptop lid on
-nothing else and re-run before believing a small number.
+### Record your baseline before you change anything, and take the best of three
+
+Everyone in the room races at once at the start, on machines that are still restoring
+packages and building. That is the worst contention of the day, and that first run becomes
+the denominator of every number you quote for the rest of it. A baseline recorded 25% slow
+makes you look 1.25x better all afternoon.
+
+So do this instead:
+
+1. Run the race, note the lap count
+2. Delete `baseline.txt`
+3. Repeat until you have three lap counts
+4. Write the **highest** of the three into `baseline.txt` by hand - it holds nothing but a
+   single integer
+
+Taking the best rather than the average is deliberate, and it is the same reasoning you
+will need later when you are judging your own optimizations. Laps completed in a fixed five
+seconds is one-sided noise: interference can only ever take laps away, never add them. The
+fastest run is the one that was least interfered with, which makes it the honest measure of
+the machine rather than the luckiest one.
+
+Delete `baseline.txt` to re-record at any point.
+
+### Numbers you should not believe
+
+Expect roughly 5% run to run noise on an otherwise idle machine, so anything under about
+1.1x is not a real gain.
+
+A much larger effect hides behind that one. Most recent laptops have two kinds of core -
+fast performance cores and slower efficiency cores - and nothing guarantees your race gets
+a fast one. On the machine this exercise was measured on, the same sieve ran at 1940 laps
+per second on a performance core and 950 on an efficiency core. **A run that lands on the
+wrong core reads half speed**, and it looks exactly like your last change made things
+worse.
+
+Before believing any result, good or bad:
+
+* Plug the laptop in. On battery the clock is throttled, and it drifts as the machine warms
+* Close everything else, particularly anything building, scanning or syncing
+* Run it again. Twice, if it surprised you
+
+If two identical runs differ by more than about 10%, you are measuring the room rather than
+your code.
 
 ## Prerequisites
 
