@@ -85,17 +85,24 @@ go run .
 as the array outgrows each level of cache. It does not tell you what to type. It shows you
 the wall, and leaves working out what to do about it to you.
 
-Two ways to run it, both measuring the same thing.
+Two console apps and a notebook. Run whichever fits how you like to work.
 
-**The console app**, which needs nothing beyond the .NET 10 SDK:
+**The console apps**, which need nothing beyond the .NET 10 SDK or Node:
 
 ```
 cd cache-cliff
-dotnet run -c Release
+dotnet run -c Release          # C#: bool[] against a bitset
+node --expose-gc cache-cliff.mjs   # JavaScript: Array, Uint8Array and a bitset
 ```
 
-It prints a table, two ASCII charts drawn on a shared scale, and writes `cache-cliff.csv`
-if you would rather plot it yourself. It reads your real per core cache sizes from the OS.
+Each prints a table, ASCII charts drawn on a shared scale, and writes a CSV if you would
+rather plot it yourself. The C# one reads your real per core cache sizes from the OS. The
+JavaScript one additionally weighs each representation, which is worth seeing: a plain
+`Array` of booleans costs **eight bytes per candidate**, against one for a `Uint8Array`,
+because it holds tagged values rather than bytes.
+
+Run whichever matches the race you are in. The shape of the curve is the same in both, but
+the JavaScript one has an extra rung in it.
 
 **The notebook**, `cache-cliff/cache-cliff.ipynb`, if you would rather have interactive
 charts. It measures in C#, reads cache sizes in PowerShell and draws with Plotly.NET in F#,
