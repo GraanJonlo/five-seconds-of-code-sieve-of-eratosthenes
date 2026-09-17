@@ -28,6 +28,12 @@ breaks — they are written to be read out in a debrief.
 | `results.csv` | Every individual run — 5 repetitions per configuration |
 | `summary.csv` | Aggregated per configuration: max, median, min rate and speedup |
 | `core-sweep.csv` | The pre-flight sweep identifying which logical CPUs are E-cores |
+| `replications/` | Two later full re-runs, raw and aggregated. See below |
+
+Every language also has a `rung-6-on-byte-array` variant: rung 6 applied directly to rung 4,
+skipping the bitset entirely. It exists because the nudge order in the notes depends on
+knowing whether inverting the sense pays without rung 5 underneath it. It does, in every
+language, and it is the only rung measured never to cost anything.
 
 Rungs 1–6 are **cumulative**: each includes everything below it, which is the path a
 pair actually climbs. Rungs 7, 8, 9 and pooling are **independent deltas from rung 6**,
@@ -49,6 +55,20 @@ under `%TEMP%` — the repository working tree is never modified, and your own
 **Do this before a session if you want to quote numbers.** Laps are not portable
 between machines, and the ratios move too: they depend on cache sizes, on memory
 bandwidth, and on how the runtimes on your box behave.
+
+## The replications
+
+`replications/` holds two further complete runs, made on a later and busier day in order to
+measure the byte array variant. They are kept separate rather than merged because absolute
+rates that day ran about 25% lower with noticeably worse spread, and mixing two sessions'
+numbers into one table is exactly the problem these files exist to prevent. `results.csv` and
+`summary.csv` remain the evidence for the tables in the notes.
+
+They are worth keeping for a second reason. The absolute rates moved by a quarter between
+days; the **ratios did not move**. Rung 5's step over rung 4 came out within about 2% in all
+four languages across all three sessions, and every ratio-expressed finding in the notes
+replicated. That is the strongest evidence here that these numbers describe the code rather
+than the afternoon.
 
 ## Methodology
 

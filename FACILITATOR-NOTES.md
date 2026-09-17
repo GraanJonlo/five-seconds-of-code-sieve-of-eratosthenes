@@ -320,6 +320,12 @@ it has no padding. Bound the reader by the candidate count, never by `words.Leng
 own, but it is what makes rung 5 pay its way — in C# rungs 5 and 6 together are 1.03x
 against rung 4, where rung 5 alone was 0.95x.
 
+**This rung does not need the bitset under it.** Inverting the sense works just as well on
+rung 4's byte array, where it is worth 1.04x to 1.33x depending on language and cannot cost
+anything at all. That makes it the safest thing to point a pair at once they have rung 4,
+and it changes the nudge order — see
+[rung 6 without the bitset](#rung-6-without-the-bitset).
+
 ### Rung 7 — cache blocking
 
 Every language, and usually not worth it here.
@@ -552,6 +558,66 @@ stacking a regression would contaminate everything above it.
 | 9 — bounds check removal | **0.96x** | 11.47x | A regression |
 | Pooled buffer *(off ladder)* | **1.01x** | 12.02x | Nothing. See the rules call |
 
+### Rung 6 without the bitset
+
+Rung 6 is described above as sitting on top of rung 5, but it does not have to. Inverting
+the sense so zero means prime works just as well on rung 4's odds only **byte array**, and
+deletes the fill without adding an instruction to any write.
+
+The order you hand out nudges depends on this, so it was measured separately, in two full
+replications on a later and busier day. Absolute lap rates that day ran about 25% below the
+session above with worse noise, so these are **step ratios against a rung 4 measured
+alongside them** — not cumulative figures comparable with the table above.
+
+| Step over rung 4 | C# | F# | Go | JavaScript |
+|---|---|---|---|---|
+| Replication A | 1.04x | 1.29x | 1.11x | 1.02x |
+| Replication B | 1.09x | 1.33x | 1.10x | 0.98x |
+
+**It never costs anything.** The worst of the eight observations is 0.98x, inside that day's
+noise. That is structural rather than lucky: inverting the sense only ever *removes* a pass
+over the array, where the bitset trades extra instructions on every write for a smaller
+footprint and can therefore lose. It is the one rung on the board with no downside.
+
+**What it is worth varies enormously by language.** F# gains about 1.3x. C# gains a little.
+JavaScript gains nothing measurable — which is fine, because it costs nothing either.
+
+As a destination rather than a stepping stone, though, the picture changes:
+
+| Byte array route against bitset route | C# | F# | Go | JavaScript |
+|---|---|---|---|---|
+| rung 6 on bytes / rung 6 on a bitset | 1.02x | 1.15x | **0.85x** | 1.04x |
+
+**Go is the exception, and it is a big one.** Go rewards the bitset more than any other
+language here (rung 5 alone is 1.30x), and stopping at the byte array leaves about 15% on the
+table. F# is the opposite: it should stay on bytes. C# and JavaScript are indifferent.
+
+So point every pair at rung 6 before rung 5, because it cannot hurt them — then tell a Go
+pair in particular that the bitset is worth going on for.
+
+### The replications, and why they are reassuring
+
+Those two replications re-measured everything else as well, and the result is worth knowing
+before you quote any number on this page.
+
+Absolute rates moved by about a quarter between days. The **ratios barely moved at all**.
+Rung 5's step over rung 4, measured three times on three different days:
+
+| | C# | F# | Go | JavaScript |
+|---|---|---|---|---|
+| Main session | 0.950x | 1.118x | 1.302x | 0.955x |
+| Replication A | 0.945x | 1.116x | 1.318x | 0.951x |
+| Replication B | 0.967x | 1.143x | 1.292x | 0.915x |
+
+Every finding on this page that is expressed as a ratio survived. That is exactly the case
+for scoring each team against their own baseline rather than against raw laps — and it is
+the same argument you are making to the room at the intro, so it is worth having the numbers
+to hand when somebody asks whether any of this is reproducible.
+
+The raw rows for both replications are in `facilitator-solutions/replications/`. The main
+`results.csv` and `summary.csv` remain the evidence for the tables above, from the one
+session that produced them.
+
 ### How it was measured
 
 | | |
@@ -736,11 +802,17 @@ will hand them out. If you mobbed rung 2 as suggested, nudge 1 is already spent,
 | Still on `new Array(n)` (JavaScript) | "How many bytes do you think each `true` in that array takes?" |
 | Go and F# | Nudge 3. They start flat and their rung 1 is worth nothing |
 | Reached rung 4 with time left | Nudge 5, then 4 — in that order, see below |
+| Reached rung 4 with time left, **in Go** | Nudge 5, then 4, and mean it — Go is the one language that really wants the bitset |
 
 **Nudges 4, 5 and 6 are optional, and 4 is the one to be careful with.** Rungs 5 and 7 can
 measure *negative*, so those nudges point at something worth investigating rather than at a
-guaranteed win. Nudge 5 aims at rung 6, which is cheap and reliable, so hand it out before
-nudge 4 rather than after — that is a change from the order these are numbered in.
+guaranteed win.
+
+Nudge 5 aims at rung 6, and rung 6 applied to the byte array is measured at 1.04x to 1.33x
+with a worst case of 0.98x — it is the only rung that cannot cost a pair anything. So hand
+nudge 5 out **before** nudge 4, which is a change from the order these are numbered in.
+Then let the bitset be the follow-on question rather than the next step: it is worth 1.30x
+in Go and negative in C# and JavaScript.
 
 Hold each one until a pair has been stuck for about fifteen minutes. Each is a question, not
 an instruction, and the follow up is only for when the question lands flat.
